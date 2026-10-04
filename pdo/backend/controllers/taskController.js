@@ -1,0 +1,10 @@
+const Task = require('../models/Task');
+const pick = b => { const o = {}; ['title','description','category','deadline','priority','status'].forEach(k => { if (b[k] !== undefined) o[k] = b[k]; }); return o; };
+const q = req => ({ _id: req.params.id, userId: req.user._id });
+const send = (res, t) => t ? res.json({ task: t }) : res.status(404).json({ message: 'Task not found' });
+exports.list = async (req, res, next) => { try { res.json({ tasks: await Task.find({ userId: req.user._id }).sort('-createdAt') }); } catch (e) { next(e); } };
+exports.get = async (req, res, next) => { try { send(res, await Task.findOne(q(req))); } catch (e) { next(e); } };
+exports.create = async (req, res, next) => { try { res.status(201).json({ task: await Task.create({ ...pick(req.body), userId: req.user._id }) }); } catch (e) { next(e); } };
+exports.update = async (req, res, next) => { try { send(res, await Task.findOneAndUpdate(q(req), pick(req.body), { new: true, runValidators: true })); } catch (e) { next(e); } };
+exports.remove = async (req, res, next) => { try { const t = await Task.findOneAndDelete(q(req)); t ? res.json({ message: 'Task deleted' }) : res.status(404).json({ message: 'Task not found' }); } catch (e) { next(e); } };
+exports.complete = async (req, res, next) => { try { send(res, await Task.findOneAndUpdate(q(req), { status: 'Completed' }, { new: true })); } catch (e) { next(e); } };
